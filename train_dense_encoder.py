@@ -776,6 +776,7 @@ def main(cfg: DictConfig):
 
 
 if __name__ == "__main__":
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     logger.info("Sys.argv: %s", sys.argv)
     hydra_formatted_args = []
     # convert the cli params added by torch.distributed.launch into Hydra format

@@ -52,7 +52,7 @@ def setup_for_distributed_mode(
 
         model, optimizer = amp.initialize(model, optimizer, opt_level=fp16_opt_level)
 
-    if n_gpu > 1:
+    if n_gpu > 2:
         model = torch.nn.DataParallel(model)
 
     if local_rank != -1:

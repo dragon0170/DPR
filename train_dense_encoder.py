@@ -369,6 +369,14 @@ class BiEncoderTrainer(object):
                 q_attn_mask = self.tensorizer.get_attn_mask(q_ids)
                 ctx_attn_mask = self.tensorizer.get_attn_mask(ctx_ids_batch)
                 with torch.no_grad():
+                    logger.info("==============")
+                    logger.info("q_ids device: %s", q_ids.device)
+                    logger.info("q_segments device: %s", q_segments.device)
+                    logger.info("q_attn_mask device: %s", q_attn_mask.device)
+                    logger.info("ctx_ids_batch device: %s", ctx_ids_batch.device)
+                    logger.info("ctx_seg_batch device: %s", ctx_seg_batch.device)
+                    logger.info("ctx_attn_mask device: %s", ctx_attn_mask.device)
+                    logger.info("==============")
                     q_dense, ctx_dense = self.biencoder(
                         q_ids,
                         q_segments,

@@ -378,12 +378,12 @@ class BiEncoderTrainer(object):
                     logger.info("ctx_attn_mask device: %s", ctx_attn_mask.is_cuda)
                     logger.info("==============")
                     # gpu_device = torch.device("cuda:0")
-                    q_ids.cuda()
-                    q_segments.cuda()
-                    q_attn_mask.cuda()
-                    ctx_ids_batch.cuda()
-                    ctx_seg_batch.cuda()
-                    ctx_attn_mask.cuda()
+                    # q_ids.cuda()
+                    # q_segments.cuda()
+                    # q_attn_mask.cuda()
+                    # ctx_ids_batch.cuda()
+                    # ctx_seg_batch.cuda()
+                    # ctx_attn_mask.cuda()
                     q_dense, ctx_dense = self.biencoder(
                         q_ids,
                         q_segments,

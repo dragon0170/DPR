@@ -40,7 +40,7 @@ def setup_for_distributed_mode(
     fp16: bool = False,
     fp16_opt_level: str = "O1",
 ) -> (nn.Module, torch.optim.Optimizer):
-    model.to(device)
+    model.to(torch.device("cpu"))
     if fp16:
         try:
             import apex

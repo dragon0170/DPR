@@ -325,6 +325,7 @@ class BiEncoderTrainer(object):
         log_result_step = cfg.train.log_batch_step
         dataset = 0
         biencoder = get_model_obj(self.biencoder)
+        self.biencoder.to(torch.device("cpu"))
         for i, samples_batch in enumerate(data_iterator.iterate_ds_data()):
             # samples += 1
             if len(q_represenations) > cfg.train.val_av_rank_max_qs / distributed_factor:

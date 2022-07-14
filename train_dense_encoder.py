@@ -140,7 +140,7 @@ class BiEncoderTrainer(object):
             sharded_iterators,
             shuffle_seed,
             shuffle,
-            sampling_rates=sampling_rates if is_train_set else [1],
+            sampling_rates=sampling_rates,
             rank=rank,
         )
 

@@ -316,6 +316,7 @@ class BiEncoderTrainer(object):
         biencoder = get_model_obj(self.biencoder)
         self.biencoder.to(torch.device("cpu"))
         for i, samples_batch in enumerate(data_iterator.iterate_ds_data()):
+            logger.info("test")
             # samples += 1
             if len(q_represenations) >= 2:
                 break

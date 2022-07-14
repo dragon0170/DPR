@@ -420,6 +420,11 @@ class BiEncoderTrainer(object):
         print(scores)
         print("positive_idx_per_question")
         print(positive_idx_per_question)
+        values, indices = torch.sort(scores, dim=1, descending=True)
+        print("values")
+        print(values)
+        print("indices")
+        print(indices)
 
         return 0
 

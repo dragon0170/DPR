@@ -332,9 +332,6 @@ class BiEncoderTrainer(object):
                 num_other_negatives,
                 shuffle=False,
             )
-            logger.info("bidencoder_input")
-            logger.info("%v", biencoder_input.context_ids)
-            logger.info("%v", biencoder_input.question_ids)
             total_ctxs = len(ctx_represenations)
             ctxs_ids = biencoder_input.context_ids
             ctxs_segments = biencoder_input.ctx_segments
@@ -421,6 +418,8 @@ class BiEncoderTrainer(object):
         scores = sim_score_f(q_represenations, ctx_represenations)
         print("scores")
         print(scores)
+        print("positive_idx_per_question")
+        print(positive_idx_per_question)
 
         return 0
 

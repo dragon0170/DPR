@@ -318,7 +318,7 @@ class BiEncoderTrainer(object):
         logger.info("test")
         for i, samples_batch in enumerate(data_iterator.iterate_ds_data()):
             # samples += 1
-            if len(q_represenations) >= 5:
+            if len(q_represenations) >= 10:
                 break
 
             if isinstance(samples_batch, Tuple):

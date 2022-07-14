@@ -317,8 +317,8 @@ class BiEncoderTrainer(object):
         self.biencoder.to(torch.device("cpu"))
         for i, samples_batch in enumerate(data_iterator.iterate_ds_data()):
             # samples += 1
-            # if len(q_represenations) > cfg.train.val_av_rank_max_qs / distributed_factor:
-            #     break
+            if len(q_represenations) >= 2:
+                break
 
             if isinstance(samples_batch, Tuple):
                 samples_batch, dataset = samples_batch
@@ -331,6 +331,9 @@ class BiEncoderTrainer(object):
                 num_other_negatives,
                 shuffle=False,
             )
+            print("bidencoder_input")
+            print(biencoder_input.context_ids)
+            print(biencoder_input.question_ids)
             total_ctxs = len(ctx_represenations)
             ctxs_ids = biencoder_input.context_ids
             ctxs_segments = biencoder_input.ctx_segments
@@ -400,7 +403,6 @@ class BiEncoderTrainer(object):
                     len(ctx_represenations),
                     len(q_represenations),
                 )
-            break
 
         ctx_represenations = torch.cat(ctx_represenations, dim=0)
         q_represenations = torch.cat(q_represenations, dim=0)

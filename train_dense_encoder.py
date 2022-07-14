@@ -114,7 +114,7 @@ class BiEncoderTrainer(object):
     ):
 
         hydra_datasets = self.ds_cfg.train_datasets if is_train_set else self.ds_cfg.dev_datasets
-        sampling_rates = self.ds_cfg.sampling_rates
+        sampling_rates = self.ds_cfg.sampling_rates if is_train_set else [1]
 
         logger.info(
             "Initializing task/set data %s",

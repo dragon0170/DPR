@@ -331,9 +331,9 @@ class BiEncoderTrainer(object):
                 num_other_negatives,
                 shuffle=False,
             )
-            print("bidencoder_input")
-            print(biencoder_input.context_ids)
-            print(biencoder_input.question_ids)
+            logger.info("bidencoder_input")
+            logger.info("%v", biencoder_input.context_ids)
+            logger.info("%v", biencoder_input.question_ids)
             total_ctxs = len(ctx_represenations)
             ctxs_ids = biencoder_input.context_ids
             ctxs_segments = biencoder_input.ctx_segments

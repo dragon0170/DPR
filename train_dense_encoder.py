@@ -291,6 +291,136 @@ class BiEncoderTrainer(object):
         )
         return total_loss
 
+    def get_embeddings_score(self) -> float:
+        cfg = self.cfg
+        self.biencoder.eval()
+        distributed_factor = self.distributed_factor
+
+        if not self.dev_iterator:
+            self.dev_iterator = self.get_data_iterator(
+                cfg.train.dev_batch_size, False, shuffle=False, rank=cfg.local_rank
+            )
+        data_iterator = self.dev_iterator
+
+        sub_batch_size = cfg.train.val_av_rank_bsz
+        sim_score_f = BiEncoderNllLoss.get_similarity_function()
+        q_represenations = []
+        ctx_represenations = []
+        positive_idx_per_question = []
+
+        num_hard_negatives = cfg.train.val_av_rank_hard_neg
+        num_other_negatives = cfg.train.val_av_rank_other_neg
+
+        log_result_step = cfg.train.log_batch_step
+        dataset = 0
+        biencoder = get_model_obj(self.biencoder)
+        self.biencoder.to(torch.device("cpu"))
+        for i, samples_batch in enumerate(data_iterator.iterate_ds_data()):
+            # samples += 1
+            # if len(q_represenations) > cfg.train.val_av_rank_max_qs / distributed_factor:
+            #     break
+
+            if isinstance(samples_batch, Tuple):
+                samples_batch, dataset = samples_batch
+
+            biencoder_input = biencoder.create_biencoder_input(
+                samples_batch,
+                self.tensorizer,
+                True,
+                num_hard_negatives,
+                num_other_negatives,
+                shuffle=False,
+            )
+            total_ctxs = len(ctx_represenations)
+            ctxs_ids = biencoder_input.context_ids
+            ctxs_segments = biencoder_input.ctx_segments
+            bsz = ctxs_ids.size(0)
+
+            # get the token to be used for representation selection
+            ds_cfg = self.ds_cfg.dev_datasets[dataset]
+            encoder_type = ds_cfg.encoder_type
+            rep_positions = ds_cfg.selector.get_positions(biencoder_input.question_ids, self.tensorizer)
+
+            # split contexts batch into sub batches since it is supposed to be too large to be processed in one batch
+            for j, batch_start in enumerate(range(0, bsz, sub_batch_size)):
+
+                q_ids, q_segments = (
+                    (biencoder_input.question_ids, biencoder_input.question_segments) if j == 0 else (None, None)
+                )
+
+                if j == 0 and cfg.n_gpu > 1 and q_ids.size(0) == 1:
+                    # if we are in DP (but not in DDP) mode, all model input tensors should have batch size >1 or 0,
+                    # otherwise the other input tensors will be split but only the first split will be called
+                    continue
+
+                ctx_ids_batch = ctxs_ids[batch_start: batch_start + sub_batch_size]
+                ctx_seg_batch = ctxs_segments[batch_start: batch_start + sub_batch_size]
+
+                q_attn_mask = self.tensorizer.get_attn_mask(q_ids)
+                ctx_attn_mask = self.tensorizer.get_attn_mask(ctx_ids_batch)
+                with torch.no_grad():
+                    logger.info("==============")
+                    # logger.info("q_ids device: %s", q_ids.is_cuda)
+                    # logger.info("q_segments device: %s", q_segments.is_cuda)
+                    # logger.info("q_attn_mask device: %s", q_attn_mask.is_cuda)
+                    # logger.info("ctx_ids_batch device: %s", ctx_ids_batch.is_cuda)
+                    # logger.info("ctx_seg_batch device: %s", ctx_seg_batch.is_cuda)
+                    # logger.info("ctx_attn_mask device: %s", ctx_attn_mask.is_cuda)
+                    logger.info("==============")
+                    # gpu_device = torch.device("cuda:0")
+                    # q_ids.cuda()
+                    # q_segments.cuda()
+                    # q_attn_mask.cuda()
+                    # ctx_ids_batch.cuda()
+                    # ctx_seg_batch.cuda()
+                    # ctx_attn_mask.cuda()
+                    q_dense, ctx_dense = self.biencoder(
+                        q_ids,
+                        q_segments,
+                        q_attn_mask,
+                        ctx_ids_batch,
+                        ctx_seg_batch,
+                        ctx_attn_mask,
+                        encoder_type=encoder_type,
+                        representation_token_pos=rep_positions,
+                    )
+
+                if q_dense is not None:
+                    q_represenations.extend(q_dense.cpu().split(1, dim=0))
+
+                ctx_represenations.extend(ctx_dense.cpu().split(1, dim=0))
+
+            batch_positive_idxs = biencoder_input.is_positive
+            positive_idx_per_question.extend([total_ctxs + v for v in batch_positive_idxs])
+
+            if (i + 1) % log_result_step == 0:
+                logger.info(
+                    "Av.rank validation: step %d, computed ctx_vectors %d, q_vectors %d",
+                    i,
+                    len(ctx_represenations),
+                    len(q_represenations),
+                )
+            break
+
+        ctx_represenations = torch.cat(ctx_represenations, dim=0)
+        q_represenations = torch.cat(q_represenations, dim=0)
+
+        logger.info("Av.rank validation: total q_vectors size=%s", q_represenations.size())
+        logger.info("Av.rank validation: total ctx_vectors size=%s", ctx_represenations.size())
+
+        q_num = q_represenations.size(0)
+        assert q_num == len(positive_idx_per_question)
+
+        print("q_representations")
+        print(q_represenations)
+        print("ctx_representations")
+        print(ctx_represenations)
+        scores = sim_score_f(q_represenations, ctx_represenations)
+        print("scores")
+        print(scores)
+
+        return 0
+
     def validate_average_rank(self) -> float:
         """
         Validates biencoder model using each question's gold passage's rank across the set of passages from the dataset.
@@ -785,8 +915,9 @@ def main(cfg: DictConfig):
         trainer.run_train()
     elif cfg.model_file and cfg.dev_datasets:
         logger.info("No train files are specified. Run 2 types of validation for specified model file")
-        trainer.validate_nll()
-        trainer.validate_average_rank()
+        trainer.get_embeddings_score()
+        # trainer.validate_nll()
+        # trainer.validate_average_rank()
     else:
         logger.warning("Neither train_file or (model_file & dev_file) parameters are specified. Nothing to do.")
 

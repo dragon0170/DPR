@@ -1,10 +1,10 @@
 # @package _group_
 
-# model type. One of [hf_bert, pytext_bert, fairseq_roberta]
-encoder_model_type: hf_bert
+# model type. One of [hf_bert, hf_roberta, pytext_bert, fairseq_roberta]
+encoder_model_type: hf_roberta
 
 # HuggingFace's config name for model initialization
-pretrained_model_cfg: klue/bert-base
+pretrained_model_cfg: klue/roberta-base
 
 # Some encoders need to be initialized from a file
 pretrained_file:
